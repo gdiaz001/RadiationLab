@@ -1,0 +1,93 @@
+%Lab 13
+
+background_cpm = 29; %half-minue background count
+dead_time = 100; %microseconds
+
+fileName = "Ca_Ba_137_half_life.tsv"; 
+opts = detectImportOptions(fileName,"FileType","text",'Delimiter','\t','Range',11);
+opts.SelectedVariableNames = ["Number","Voltage","Counts","Time"];
+src_table = readtable(fileName,opts); 
+src_counts = table2array(src_table(:,"Counts")); 
+
+%correcting for dead time 
+src_cpm_corrected = zeros(length(src_counts),1);
+for i = 1:length(src_counts) 
+    r = src_counts(i);
+    denom = 1 - r*dead_time/30/10^6; %dead_time converted to units of half-minutes
+    x = r/denom; 
+    src_cpm_corrected(i) = x; 
+end
+
+%correcting for background 
+src_cpm_corrected = src_cpm_corrected - background_cpm; 
+
+time  = 30 * linspace(1,length(src_counts),length(src_counts)); %in seconds
+time = time'; 
+
+a = polyfit(time,log(src_counts),1);
+%to find correlation coefficient matrix
+cc_matrix = corrcoef(time,log(src_counts));
+R_squared = (cc_matrix(1,2))^2;
+fprintf("R^2 for activities v time"); %%%
+disp(R_squared);
+figure(1);
+plot(time,log(src_counts),'.',time,polyval(a,time));
+grid on; 
+title("Activity vs time");
+xlabel("Time(s)");
+ylabel("Log (Activity)"); 
+
+
+b = polyfit(time,log(src_cpm_corrected),1);
+cc_matrix = corrcoef(time,log(src_cpm_corrected));
+R_squared = (cc_matrix(1,2))^2;
+fprintf("R^2 for Corrected counts v time"); %%%%
+disp(R_squared);
+figure(2);
+plot(time,log(src_cpm_corrected),'.',time,polyval(b,time));
+grid on ;
+title("Corrected counts vs time"); 
+xlabel("Time (s)");
+ylabel("Log (Corrected counts)"); 
+
+fprintf("\n");
+
+%using linear regressions on different 
+%first linear regression 
+X = [ones(15,1) time(1:15)];
+first_reg = X\log(src_cpm_corrected(1:15)); %slope is first_reg(2)
+first_lm = fitlm(time(1:15),log(src_cpm_corrected(1:15)));
+std_errors1 = diag(sqrt(first_lm.CoefficientCovariance)); 
+std_error1 = std_errors1(1);
+
+X = [ones(16,1) time(16:31)];
+second_reg = X\log(src_cpm_corrected(16:31));%slope is second_reg(2)
+second_lm = fitlm(time(16:31),log(src_cpm_corrected(16:31)));
+std_errors2 = diag(sqrt(second_lm.CoefficientCovariance)); 
+std_error2 = std_errors2(1);
+
+X = [ones(length(time),1) time];
+third_reg = X\log(src_cpm_corrected); %slope is third_reg(2) 
+third_lm = fitlm(time,log(src_cpm_corrected));
+std_errors3 = diag(sqrt(third_lm.CoefficientCovariance)); 
+std_error3 = std_errors3(1);
+
+%first half 
+lambda = -1 * first_reg(2);
+half_life = log(2)/lambda; 
+disp(half_life); 
+
+
+DataPoints = ["First half" "Second Half" "All"];
+lambda = [-1*first_reg(2) -1*second_reg(2) -1*third_reg(2) ]; 
+HalfLife = [log(2)/lambda(1) log(2)/lambda(2) log(2)/lambda(3)]; 
+Error = [std_error1 std_error2 std_error3];
+NumberOfSigmas = [ 0 0 0 ] ;
+SigmaHalfLife = [ 0 0 0 ]; 
+
+true_value = 153; 
+
+for i = 1:3
+    SigmaHalfLife(i) = Error
+for i = 1:3
+    NumberOfSigmas(i) = (lambda(i) - true_value)/

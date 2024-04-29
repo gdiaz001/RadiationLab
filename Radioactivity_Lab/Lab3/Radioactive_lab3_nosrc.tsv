@@ -1,0 +1,14 @@
+Description	
+Number of Runs	3
+Preset Time	300
+Pause Time	0
+Alarm Level	0
+High Voltage	900
+Step Voltage	0
+Volume	0
+
+Run	High		Elapsed
+Number	Voltage	Counts	Time	Date/Time
+1	900	1306	300	04/04/24 02:35:44 PM	
+2	900	1356	300	04/04/24 02:40:46 PM	
+3	900	1294	300	04/04/24 02:45:49 PM	
